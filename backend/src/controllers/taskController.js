@@ -7,6 +7,8 @@ const getAllTasks = async (req, res) => {
     const { rows } = await pool.query('SELECT * FROM tasks ORDER BY id ASC');
     console.log(`📤 ดึงข้อมูลสำเร็จ! พบทั้งหมด ${rows.length} รายการ`);
     return res.json(rows);
+
+    
   } catch (err) {
     console.error("❌ Controller Error:", err.message);
     return res.status(500).json({ error: err.message, location: "getAllTasks" });
