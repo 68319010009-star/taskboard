@@ -1,0 +1,58 @@
+name: CI — TaskBoard
+
+# ────────────────────────────────────────────────
+# Trigger: push ไปยัง feature/* หรือ develop
+#          หรือ PR เข้า develop/main
+# ────────────────────────────────────────────────
+on:
+  push:
+    branches:
+      - develop
+      - 'feature/**'
+  pull_request:
+    branches:
+      - develop
+      - main
+
+jobs:
+  lint-and-build:
+    name: Lint & Build
+    runs-on: ubuntu-latest   # ใช้ GitHub-hosted runner (Ubuntu)
+
+    steps:
+      # Step 1: ดึง source code จาก GitHub มาที่ Runner
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: ติดตั้ง Node.js เวอร์ชัน 20
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'             # cache node_modules ให้ build เร็วขึ้น
+          cache-dependency-path: backend/package-lock.json
+
+      # ── Backend ──────────────────────────────
+      - name: Install backend dependencies
+        working-directory: backend   # เปลี่ยน directory ก่อนรัน
+        run: npm ci                  # ci = clean install (เร็วกว่า npm install)
+
+      - name: Lint backend code
+        working-directory: backend
+        run: npm run lint            # ถ้า ESLint error → job fail → CI ไม่ผ่าน
+
+      # ── Frontend ──────────────────────────────
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend (production)
+        working-directory: frontend
+        run: npm run build           # สร้าง dist/ — ถ้า build fail → CI ไม่ผ่าน
+
+      # ── Docker Smoke Test ─────────────────────
+      - name: Docker build test (backend)
+        run: docker build -t taskboard-backend:ci ./backend
+
+      - name: Docker build test (frontend)
+        run: docker build -t taskboard-frontend:ci ./frontend
