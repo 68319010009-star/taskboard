@@ -1,0 +1,44 @@
+name: CD — Deploy TaskBoard
+
+# ────────────────────────────────────────────────
+# Trigger: push ไปยัง main เท่านั้น (หลัง PR merge)
+# ────────────────────────────────────────────────
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-push:
+    name: Build & Push to Docker Hub
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: ดึง source code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Login เข้า Docker Hub ด้วย Secret
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}   # ดึงจาก GitHub Secrets
+          password: ${{ secrets.DOCKERHUB_TOKEN }}      # ไม่มีใครเห็นค่านี้ใน log
+
+      # Step 3: Build และ Push Backend Image
+      - name: Build & push backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend          # ใช้ backend/Dockerfile
+          push: true                  # push ขึ้น registry จริง
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/taskboard-backend:latest
+
+      # Step 4: Build และ Push Frontend Image
+      - name: Build & push frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/taskboard-frontend:latest
