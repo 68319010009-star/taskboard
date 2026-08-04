@@ -1,0 +1,12 @@
+FROM node:20-alpine
+WORKDIR /app
+
+# Copy package files ก่อน (ใช้ cache layer)
+COPY package*.json ./
+RUN npm ci --omit=dev
+
+# Copy source code
+COPY . .
+
+EXPOSE 3001
+CMD ["node", "index.js"]
